@@ -105,10 +105,41 @@ export default function LandingContent({
     }
   }, [initialProjectSlug, embeddedVideo?.slug, expandedSection, onProjectChange]);
 
+  const handleProjectClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    project: { href?: string; embed?: string; role?: ProjectRole; title: string; slug: string },
+    section: SectionId
+  ) => {
+    const { href, embed, role, title, slug } = project;
+    if (!href) {
+      e.preventDefault();
+      return;
+    }
+
+    const allowEmbed = Boolean(embed) && Boolean(href);
+    const embedSrc = allowEmbed && href ? getEmbedSrc(href) : null;
+
+    if (embedSrc) {
+      if (e.metaKey || e.ctrlKey || e.button !== 0) {
+        return;
+      }
+
+      e.preventDefault();
+      lastFocusedRef.current = e.currentTarget;
+      setEmbeddedVideo({
+        src: embedSrc,
+        title,
+        slug,
+        role,
+      });
+      onProjectChange?.({ slug, section });
+    }
+  };
+
   return (
-    <div className="relative z-20 text-white p-10 md:p-16">
-      {/* Contact Details - Top Right */}
-      <div className="fixed top-10 md:top-16 right-10 md:right-16 text-right text-sm md:text-base text-white/70 space-y-1 font-bold">
+    <div className="relative z-20 text-white">
+      {/* Contact Details - Mobile: top right, Desktop: top right */}
+      <div className="fixed top-4 right-4 md:top-16 md:right-16 text-right text-xs md:text-base text-white/70 space-y-1 font-bold z-30">
         <div>
           <a href="mailto:alexbyjames@icloud.com" className="hover:text-white transition-colors">
             alexbyjames@icloud.com
@@ -131,137 +162,249 @@ export default function LandingContent({
         </div>
       </div>
 
-      <div
-        className={
-          embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
-        }
-      >
-        <Link href="/" className="block">
-          <h1 className="text-6xl md:text-8xl font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer">
-            James Alexander Topham
-          </h1>
-        </Link>
-        <p className="text-xl md:text-2xl mb-10 font-bold tracking-wide">
-          <span
-            className={
-              embeddedVideo?.role === "cinematographer" ||
-              embeddedVideo?.role === "both"
-                ? "text-white"
-                : embeddedVideo
-                ? "text-white/30 blur-[1px] transition-all"
-                : "text-white/90"
-            }
-          >
-            Cinematographer
-          </span>{" "}
-          <span
-            className={
-              embeddedVideo
-                ? "text-white/30 blur-[1px] transition-all"
-                : "text-white/70"
-            }
-          >
-            &
-          </span>{" "}
-          <span
-            className={
-              embeddedVideo?.role === "director" ||
-              embeddedVideo?.role === "both"
-                ? "text-white"
-                : embeddedVideo
-                ? "text-white/30 blur-[1px] transition-all"
-                : "text-white/90"
-            }
-          >
-            Director
-          </span>
-        </p>
+      {/* Mobile Layout (below md) */}
+      <div className="block md:hidden px-4 pt-6 pb-4">
+        {/* Top Block: Name, Subtitle */}
+        <div
+          className={
+            embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
+          }
+        >
+          <Link href="/" className="block">
+            <h1 className="text-5xl font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer max-w-[85%]">
+              James Alexander Topham
+            </h1>
+          </Link>
+          <p className="text-base font-bold tracking-wide mb-4">
+            <span
+              className={
+                embeddedVideo?.role === "cinematographer" ||
+                embeddedVideo?.role === "both"
+                  ? "text-white"
+                  : embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/90"
+              }
+            >
+              Cinematographer
+            </span>{" "}
+            <span
+              className={
+                embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/70"
+              }
+            >
+              &
+            </span>{" "}
+            <span
+              className={
+                embeddedVideo?.role === "director" ||
+                embeddedVideo?.role === "both"
+                  ? "text-white"
+                  : embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/90"
+              }
+            >
+              Director
+            </span>
+          </p>
+        </div>
+
+        {/* Section List - Mobile: vertical menu */}
+        <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
+          <nav className="flex flex-col gap-1 mb-4">
+            {featuredSections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => {
+                  onSectionChange(section.id);
+                  setExpandedSection(section.id);
+                }}
+                className={`text-left py-2 px-2 text-4xl font-bold transition-opacity ${
+                  activeSection === section.id
+                    ? "text-white underline decoration-white/80 underline-offset-4"
+                    : "text-white/90"
+                }`}
+                aria-current={activeSection === section.id ? "page" : undefined}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Projects List - Mobile: show for active section */}
+          {activeSection && (
+            <div className="max-h-[calc(100vh-500px)] overflow-y-auto overflow-x-hidden">
+              <ul className="space-y-1">
+                {sectionMap[activeSection].projects.map((project, idx) => {
+                  const { href, embed, role, title, slug } = project;
+                  const linkHref = href ?? "#";
+                  const allowEmbed = Boolean(embed) && Boolean(href);
+                  const embedSrc = allowEmbed && href ? getEmbedSrc(href) : null;
+                  const shouldOpenNewTab = !!href && !embedSrc;
+
+                  return (
+                    <li key={slug ?? idx}>
+                      <a
+                        href={linkHref}
+                        className="block text-3xl font-bold text-white/90 hover:text-white transition-colors py-1"
+                        target={shouldOpenNewTab ? "_blank" : undefined}
+                        rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
+                        onClick={(e) => handleProjectClick(e, project, activeSection)}
+                      >
+                        {title}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </div>
+
       </div>
 
-      <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
-        {/* Section Navigation */}
-        <nav className="flex flex-wrap items-center gap-6 text-2xl md:text-4xl font-bold">
-          {featuredSections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => handleSectionClick(section.id)}
-              className={`min-h-[44px] min-w-[44px] px-3 py-2 transition-opacity hover:opacity-80 text-left ${
-                activeSection === section.id
-                  ? "text-white underline decoration-white/80 underline-offset-4"
+      {/* Copyright Footer - Mobile: fixed at bottom like desktop */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold md:hidden">
+        © LaMax 2025 All Rights Reserved
+      </div>
+
+      {/* Desktop Layout (md and up) - Keep exactly as before */}
+      <div className="hidden md:block p-16">
+        <div
+          className={
+            embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
+          }
+        >
+          <Link href="/" className="block">
+            <h1 className="text-8xl font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer">
+              James Alexander Topham
+            </h1>
+          </Link>
+          <p className="text-2xl mb-10 font-bold tracking-wide">
+            <span
+              className={
+                embeddedVideo?.role === "cinematographer" ||
+                embeddedVideo?.role === "both"
+                  ? "text-white"
+                  : embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
                   : "text-white/90"
-              }`}
-              aria-current={activeSection === section.id ? "page" : undefined}
-              aria-expanded={expandedSection === section.id}
+              }
             >
-              {section.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Dropdown List - Fixed position on left side */}
-        <AnimatePresence mode="wait">
-          {expandedSection && (
-            <motion.ul
-              key={expandedSection}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute left-10 md:left-16 top-[280px] md:top-[320px] text-2xl md:text-4xl font-bold space-y-4"
+              Cinematographer
+            </span>{" "}
+            <span
+              className={
+                embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/70"
+              }
             >
-              {sectionMap[expandedSection].projects.map((project, idx) => {
-                const { href, embed, role, title, slug } = project;
-                const allowEmbed = Boolean(embed) && Boolean(href);
-                const embedSrc = allowEmbed && href ? getEmbedSrc(href) : null;
+              &
+            </span>{" "}
+            <span
+              className={
+                embeddedVideo?.role === "director" ||
+                embeddedVideo?.role === "both"
+                  ? "text-white"
+                  : embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/90"
+              }
+            >
+              Director
+            </span>
+          </p>
+        </div>
 
-                const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-                  if (!href) {
-                    e.preventDefault();
-                    return;
-                  }
+        <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
+          {/* Section Navigation */}
+          <nav className="flex flex-wrap items-center gap-6 text-4xl font-bold">
+            {featuredSections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => handleSectionClick(section.id)}
+                className={`min-h-[44px] min-w-[44px] px-3 py-2 transition-opacity hover:opacity-80 text-left ${
+                  activeSection === section.id
+                    ? "text-white underline decoration-white/80 underline-offset-4"
+                    : "text-white/90"
+                }`}
+                aria-current={activeSection === section.id ? "page" : undefined}
+                aria-expanded={expandedSection === section.id}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
 
-                  if (embedSrc) {
-                    if (e.metaKey || e.ctrlKey || e.button !== 0) {
+          {/* Dropdown List - Desktop: absolute positioned */}
+          <AnimatePresence mode="wait">
+            {expandedSection && (
+              <motion.ul
+                key={expandedSection}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute left-16 top-[320px] text-4xl font-bold space-y-4"
+              >
+                {sectionMap[expandedSection].projects.map((project, idx) => {
+                  const { href, embed, role, title, slug } = project;
+                  const allowEmbed = Boolean(embed) && Boolean(href);
+                  const embedSrc = allowEmbed && href ? getEmbedSrc(href) : null;
+
+                  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                    if (!href) {
+                      e.preventDefault();
                       return;
                     }
 
-                    e.preventDefault();
-                    lastFocusedRef.current = e.currentTarget;
-                    setEmbeddedVideo({
-                      src: embedSrc,
-                      title,
-                      slug,
-                      role,
-                    });
-                    onProjectChange?.({ slug, section: expandedSection });
-                  }
-                };
+                    if (embedSrc) {
+                      if (e.metaKey || e.ctrlKey || e.button !== 0) {
+                        return;
+                      }
 
-                const linkHref = href ?? "#";
-                const shouldOpenNewTab = !!href && !embedSrc;
+                      e.preventDefault();
+                      lastFocusedRef.current = e.currentTarget;
+                      setEmbeddedVideo({
+                        src: embedSrc,
+                        title,
+                        slug,
+                        role,
+                      });
+                      onProjectChange?.({ slug, section: expandedSection });
+                    }
+                  };
 
-                return (
-                  <li key={slug ?? idx}>
-                    <a
-                      href={linkHref}
-                      className="block text-white/90 hover:text-white transition-colors py-1"
-                      target={shouldOpenNewTab ? "_blank" : undefined}
-                      rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
-                      onClick={handleClick}
-                    >
-                      {title}
-                    </a>
-                  </li>
-                );
-              })}
-            </motion.ul>
-          )}
-        </AnimatePresence>
-      </div>
+                  const linkHref = href ?? "#";
+                  const shouldOpenNewTab = !!href && !embedSrc;
 
-      {/* Copyright Footer */}
-      <div className="fixed bottom-10 md:bottom-16 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold">
-        © LaMax 2025 All Rights Reserved
+                  return (
+                    <li key={slug ?? idx}>
+                      <a
+                        href={linkHref}
+                        className="block text-white/90 hover:text-white transition-colors py-1"
+                        target={shouldOpenNewTab ? "_blank" : undefined}
+                        rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
+                        onClick={handleClick}
+                      >
+                        {title}
+                      </a>
+                    </li>
+                  );
+                })}
+              </motion.ul>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Copyright Footer - Desktop */}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold">
+          © LaMax 2025 All Rights Reserved
+        </div>
       </div>
 
       {embeddedVideo && (
