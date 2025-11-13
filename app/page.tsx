@@ -2,18 +2,18 @@ import type { Metadata } from "next";
 import HomeShell from "@/components/HomeShell";
 import { projectMapBySlug } from "@/lib/featuredSections";
 
-interface PageProps {
-  searchParams?: {
-    section?: string;
-    project?: string;
-  };
-}
-
 const baseTitle = "James Alexander Topham — Cinematographer & Director";
 const baseDescription =
   "London-based cinematographer and director crafting music videos, commercials, and art projects.";
 
-export function generateMetadata({ searchParams }: PageProps = {}): Metadata {
+export function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: {
+    section?: string;
+    project?: string;
+  };
+}): Metadata {
   const projectSlug = searchParams?.project ?? null;
   const project = projectSlug ? projectMapBySlug[projectSlug] : undefined;
 
