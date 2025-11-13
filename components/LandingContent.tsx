@@ -35,6 +35,8 @@ export default function LandingContent({
   const modalRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
+  const [listNeedsScrolling, setListNeedsScrolling] = useState(false);
 
   const closeModal = () => {
     setEmbeddedVideo(null);
@@ -104,6 +106,50 @@ export default function LandingContent({
       onProjectChange?.({ slug: project.slug, section: project.section });
     }
   }, [initialProjectSlug, embeddedVideo?.slug, expandedSection, onProjectChange]);
+
+  // Check if list needs scrolling
+  useEffect(() => {
+    // Reset immediately when section changes
+    setListNeedsScrolling(false);
+    
+    if (!expandedSection) {
+      return;
+    }
+
+    const checkScrolling = () => {
+      const container = listContainerRef.current;
+      if (!container) {
+        setListNeedsScrolling(false);
+        return;
+      }
+      
+      // Check if content height exceeds container height
+      const needsScrolling = container.scrollHeight > container.clientHeight;
+      setListNeedsScrolling(needsScrolling);
+    };
+
+    // Check after a delay to ensure DOM is fully updated with new section content
+    const timeoutId = setTimeout(checkScrolling, 200);
+    
+    // Also check on window resize
+    window.addEventListener('resize', checkScrolling);
+    
+    // Use MutationObserver to detect when list content changes
+    const observer = new MutationObserver(checkScrolling);
+    if (listContainerRef.current) {
+      observer.observe(listContainerRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+    }
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', checkScrolling);
+      observer.disconnect();
+    };
+  }, [expandedSection]);
 
   const handleProjectClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -220,7 +266,8 @@ export default function LandingContent({
                 key={section.id}
                 onClick={() => {
                   onSectionChange(section.id);
-                  setExpandedSection(section.id);
+                  // Toggle: if already expanded, close it; otherwise open it
+                  setExpandedSection(expandedSection === section.id ? null : section.id);
                 }}
                 className={`text-left py-2 px-2 text-4xl font-bold transition-opacity ${
                   activeSection === section.id
@@ -234,11 +281,18 @@ export default function LandingContent({
             ))}
           </nav>
 
-          {/* Projects List - Mobile: show for active section */}
-          {activeSection && (
-            <div className="max-h-[calc(100vh-500px)] overflow-y-auto overflow-x-hidden">
+          {/* Projects List - Mobile: show for expanded section */}
+          {expandedSection && (
+            <div 
+              ref={listContainerRef}
+              className={`overflow-y-auto overflow-x-hidden ${
+                listNeedsScrolling 
+                  ? 'max-h-[calc(100vh-444px)]' 
+                  : 'max-h-[calc(100vh-420px)]'
+              }`}
+            >
               <ul className="space-y-1">
-                {sectionMap[activeSection].projects.map((project, idx) => {
+                {sectionMap[expandedSection].projects.map((project, idx) => {
                   const { href, embed, role, title, slug } = project;
                   const linkHref = href ?? "#";
                   const allowEmbed = Boolean(embed) && Boolean(href);
@@ -252,7 +306,7 @@ export default function LandingContent({
                         className="block text-3xl font-bold text-white/90 hover:text-white transition-colors py-1"
                         target={shouldOpenNewTab ? "_blank" : undefined}
                         rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
-                        onClick={(e) => handleProjectClick(e, project, activeSection)}
+                        onClick={(e) => handleProjectClick(e, project, expandedSection)}
                       >
                         {title}
                       </a>
@@ -260,16 +314,24 @@ export default function LandingContent({
                   );
                 })}
               </ul>
+              {/* Copyright Footer - Mobile: inside scrollable list only if scrolling needed */}
+              {listNeedsScrolling && (
+                <div className="pt-8 pb-6 text-xs text-white/50 text-center font-bold">
+                  © LaMax 2025 All Rights Reserved
+                </div>
+              )}
             </div>
           )}
         </div>
 
       </div>
 
-      {/* Copyright Footer - Mobile: fixed at bottom like desktop */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold md:hidden">
-        © LaMax 2025 All Rights Reserved
-      </div>
+      {/* Copyright Footer - Mobile: fixed at bottom, hidden if list needs scrolling */}
+      {!listNeedsScrolling && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold md:hidden">
+          © LaMax 2025 All Rights Reserved
+        </div>
+      )}
 
       {/* Desktop Layout (md and up) - Keep exactly as before */}
       <div className="hidden md:block p-16">
