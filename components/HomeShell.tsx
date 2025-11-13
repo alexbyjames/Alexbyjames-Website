@@ -1,70 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import VideoBackground from "@/components/VideoBackground";
 import LandingContent from "@/components/LandingContent";
-import { sectionOrder, projectMapBySlug, type SectionId } from "@/lib/featuredSections";
+import { type SectionId } from "@/lib/featuredSections";
 
 const DEFAULT_SECTION: SectionId = "art";
 
-function isSectionId(value: string | null): value is SectionId {
-  return value !== null && sectionOrder.includes(value as SectionId);
-}
-
 export default function HomeShell() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const searchParamsString = searchParams.toString();
-
-  const [activeSection, setActiveSection] = useState<SectionId>(() => {
-    const sectionParam = searchParams.get("section");
-    if (isSectionId(sectionParam)) {
-      return sectionParam;
-    }
-    const projectParam = searchParams.get("project");
-    if (projectParam && projectMapBySlug[projectParam]) {
-      return projectMapBySlug[projectParam].section;
-    }
-    return DEFAULT_SECTION;
-  });
-  const [currentProjectSlug, setCurrentProjectSlug] = useState<string | null>(() => {
-    return searchParams.get("project");
-  });
-
-  useEffect(() => {
-    const sectionParam = searchParams.get("section");
-    let nextSection: SectionId = activeSection;
-    if (isSectionId(sectionParam)) {
-      nextSection = sectionParam;
-    } else {
-      const projectParam = searchParams.get("project");
-      if (projectParam && projectMapBySlug[projectParam]) {
-        nextSection = projectMapBySlug[projectParam].section;
-      }
-    }
-
-    if (nextSection !== activeSection) {
-      setActiveSection(nextSection);
-    }
-
-    const projectParam = searchParams.get("project");
-    if ((projectParam ?? null) !== currentProjectSlug) {
-      setCurrentProjectSlug(projectParam);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParamsString]);
-
-  const updateQuery = (section: SectionId, projectSlug: string | null) => {
-    const params = new URLSearchParams(searchParamsString);
-    params.set("section", section);
-    if (projectSlug) {
-      params.set("project", projectSlug);
-    } else {
-      params.delete("project");
-    }
-    router.replace(`/?${params.toString()}`, { scroll: false });
-  };
+  const [activeSection, setActiveSection] = useState<SectionId>(DEFAULT_SECTION);
+  const [currentProjectSlug, setCurrentProjectSlug] = useState<string | null>(null);
 
   const handleSectionChange = (section: SectionId) => {
     if (section === activeSection && currentProjectSlug === null) {
@@ -72,7 +17,6 @@ export default function HomeShell() {
     }
     setActiveSection(section);
     setCurrentProjectSlug(null);
-    updateQuery(section, null);
   };
 
   const handleProjectChange = (payload: { slug: string; section: SectionId } | null) => {
@@ -82,13 +26,11 @@ export default function HomeShell() {
       }
       setActiveSection(payload.section);
       setCurrentProjectSlug(payload.slug);
-      updateQuery(payload.section, payload.slug);
     } else {
       if (!currentProjectSlug) {
         return;
       }
       setCurrentProjectSlug(null);
-      updateQuery(activeSection, null);
     }
   };
 
