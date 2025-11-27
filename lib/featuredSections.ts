@@ -31,13 +31,26 @@ export const featuredSections: SectionConfig[] = [
         embed: "vimeo",
         role: "director",
       },
+      {
+        title: "The Last Room",
+        slug: "the-last-room",
+        href: "https://youtu.be/ZfZ39lRygg0?si=t_ndp1lBKLJCZfH9",
+        embed: "youtube",
+        role: "both",
+      },
     ],
   },
   {
     id: "music",
     label: "Music Videos",
     projects: [
-      { title: "Master Peace – Good Time", slug: "master-peace-good-time" },
+      {
+        title: "Master Peace – Good Times",
+        slug: "master-peace-good-times",
+        href: "https://youtu.be/HJzJhS5qP24?si=Mfp3FYnJ9nCnLsuA",
+        embed: "youtube",
+        role: "both",
+      },
       { title: "Master Peace – Stupid Kids", slug: "master-peace-stupid-kids" },
       { title: "Master Peace – Fuck It Up", slug: "master-peace-fuck-it-up" },
       {
@@ -74,7 +87,7 @@ export const featuredSections: SectionConfig[] = [
     id: "commercial",
     label: "Commercial",
     projects: [
-      { title: "Microsoft Copilot (coming soon)", slug: "microsoft-copilot-coming-soon" },
+      { title: "Microsoft Copilot", slug: "microsoft-copilot" },
       { title: "Anya Hindmarch", slug: "anya-hindmarch" },
       { title: "BeBody", slug: "bebody" },
     ],
