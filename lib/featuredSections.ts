@@ -49,10 +49,16 @@ export const featuredSections: SectionConfig[] = [
         slug: "master-peace-good-times",
         href: "https://youtu.be/HJzJhS5qP24?si=Mfp3FYnJ9nCnLsuA",
         embed: "youtube",
-        role: "both",
+        role: "cinematographer",
       },
       { title: "Master Peace – Stupid Kids", slug: "master-peace-stupid-kids" },
-      { title: "Master Peace – Fuck It Up", slug: "master-peace-fuck-it-up" },
+      {
+        title: "Master Peace - F**k It Up feat. Declan McKenna (Official Lyric Video)",
+        slug: "master-peace-fuck-it-up",
+        href: "https://youtu.be/Wgmz1p1YPbc?si=ZHs2umdw2hsuEFRN",
+        embed: "youtube",
+        role: "both",
+      },
       {
         title: "Mandrake Handshake – Emonzaemon",
         slug: "mandrake-handshake-emonzaemon",

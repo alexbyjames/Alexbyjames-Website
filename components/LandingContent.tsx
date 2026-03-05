@@ -37,9 +37,11 @@ export default function LandingContent({
   const lastFocusedRef = useRef<HTMLElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const [listNeedsScrolling, setListNeedsScrolling] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   const closeModal = () => {
     setEmbeddedVideo(null);
+    setShowContact(false);
     requestAnimationFrame(() => {
       lastFocusedRef.current?.focus();
     });
@@ -184,83 +186,95 @@ export default function LandingContent({
 
   return (
     <div className="relative z-20 text-white">
-      {/* Contact Details - Mobile: top right, Desktop: top right */}
-      <div className="fixed top-4 right-4 md:top-16 md:right-16 text-right text-xs md:text-base text-white/70 space-y-1 font-bold z-30">
-        <div>
-          <a href="mailto:alexbyjames@icloud.com" className="hover:text-white transition-colors">
-            alexbyjames@icloud.com
-          </a>
-        </div>
-        <div>
-          <a href="tel:+447970039098" className="hover:text-white transition-colors">
-            +44 7970 039098
-          </a>
-        </div>
-        <div>
-          <a
-            href="https://instagram.com/alexbyjames"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-white transition-colors"
-          >
-            @alexbyjames
-          </a>
-        </div>
-      </div>
-
       {/* Mobile Layout (below md) */}
-      <div className="block md:hidden px-4 pt-6 pb-4">
-        {/* Top Block: Name, Subtitle */}
+      <div className="block md:hidden px-4 pt-6 pb-8">
+        {/* Top Row: Name, Roles, Contact */}
         <div
-          className={
+          className={`flex items-start justify-between gap-4 ${
             embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
-          }
+          }`}
         >
-          <Link href="/" className="block">
-            <h1 className="text-5xl font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer max-w-[85%]">
-              James Alexander Topham
-            </h1>
-          </Link>
-          <p className="text-base font-bold tracking-wide mb-4">
-            <span
-              className={
-                embeddedVideo?.role === "cinematographer" ||
-                embeddedVideo?.role === "both"
-                  ? "text-white"
-                  : embeddedVideo
-                  ? "text-white/30 blur-[1px] transition-all"
-                  : "text-white/90"
-              }
+          <div>
+            <Link href="/" className="block">
+              <h1 className="text-xs font-black leading-tight hover:opacity-80 transition-opacity cursor-pointer">
+                Alexander
+              </h1>
+            </Link>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 text-[10px] font-semibold tracking-[0.2em] uppercase">
+            <div>
+              <span
+                className={
+                  embeddedVideo?.role === "cinematographer" ||
+                  embeddedVideo?.role === "both"
+                    ? "text-white"
+                    : embeddedVideo
+                    ? "text-white/30 blur-[1px] transition-all"
+                    : "text-white/80"
+                }
+              >
+                Cinematographer
+              </span>{" "}
+              <span
+                className={
+                  embeddedVideo
+                    ? "text-white/30 blur-[1px] transition-all"
+                    : "text-white/60"
+                }
+              >
+                &
+              </span>{" "}
+              <span
+                className={
+                  embeddedVideo?.role === "director" ||
+                  embeddedVideo?.role === "both"
+                    ? "text-white"
+                    : embeddedVideo
+                    ? "text-white/30 blur-[1px] transition-all"
+                    : "text-white/80"
+                }
+              >
+                Director
+              </span>
+            </div>
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowContact((prev) => !prev)}
+              className="text-xs font-bold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
             >
-              Cinematographer
-            </span>{" "}
-            <span
-              className={
-                embeddedVideo
-                  ? "text-white/30 blur-[1px] transition-all"
-                  : "text-white/70"
-              }
-            >
-              &
-            </span>{" "}
-            <span
-              className={
-                embeddedVideo?.role === "director" ||
-                embeddedVideo?.role === "both"
-                  ? "text-white"
-                  : embeddedVideo
-                  ? "text-white/30 blur-[1px] transition-all"
-                  : "text-white/90"
-              }
-            >
-              Director
-            </span>
-          </p>
+              Contact
+            </button>
+          </div>
         </div>
+
+        {showContact && (
+          <div className="mt-4 text-xs text-white/70 space-y-1 font-bold">
+            <div>
+              <a
+                href="mailto:alexbyjames@icloud.com"
+                className="hover:text-white transition-colors"
+              >
+                alexbyjames@icloud.com
+              </a>
+            </div>
+            <div>
+              <a
+                href="https://instagram.com/alexbyjames"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                @alexbyjames
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Section List - Mobile: vertical menu */}
-        <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
-          <nav className="flex flex-col gap-1 mb-4">
+        <div className={`${embeddedVideo ? "blur-sm pointer-events-none" : ""} mt-10`}>
+          <nav className="flex flex-col items-center gap-1 mb-4">
             {featuredSections.map((section) => (
               <button
                 key={section.id}
@@ -269,10 +283,8 @@ export default function LandingContent({
                   // Toggle: if already expanded, close it; otherwise open it
                   setExpandedSection(expandedSection === section.id ? null : section.id);
                 }}
-                className={`text-left py-2 px-2 text-4xl font-bold transition-opacity ${
-                  activeSection === section.id
-                    ? "text-white underline decoration-white/80 underline-offset-4"
-                    : "text-white/90"
+                className={`py-1 px-2 text-4xl font-bold tracking-wide transition-all ${
+                  activeSection === section.id ? "text-white" : "text-white/50 hover:text-white"
                 }`}
                 aria-current={activeSection === section.id ? "page" : undefined}
               >
@@ -283,15 +295,15 @@ export default function LandingContent({
 
           {/* Projects List - Mobile: show for expanded section */}
           {expandedSection && (
-            <div 
+            <div
               ref={listContainerRef}
               className={`overflow-y-auto overflow-x-hidden ${
-                listNeedsScrolling 
-                  ? 'max-h-[calc(100vh-444px)]' 
-                  : 'max-h-[calc(100vh-420px)]'
+                listNeedsScrolling
+                  ? "max-h-[calc(100vh-444px)]"
+                  : "max-h-[calc(100vh-420px)]"
               }`}
             >
-              <ul className="space-y-1">
+              <ul className="space-y-1 text-center">
                 {sectionMap[expandedSection].projects.map((project, idx) => {
                   const { href, embed, role, title, slug } = project;
                   const linkHref = href ?? "#";
@@ -303,7 +315,7 @@ export default function LandingContent({
                     <li key={slug ?? idx}>
                       <a
                         href={linkHref}
-                        className="block text-3xl font-bold text-white/90 hover:text-white transition-colors py-1"
+                        className="inline-block text-3xl font-bold text-white/90 hover:text-white transition-colors py-1"
                         target={shouldOpenNewTab ? "_blank" : undefined}
                         rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
                         onClick={(e) => handleProjectClick(e, project, expandedSection)}
@@ -315,11 +327,6 @@ export default function LandingContent({
                 })}
               </ul>
               {/* Copyright Footer - Mobile: inside scrollable list only if scrolling needed */}
-              {listNeedsScrolling && (
-                <div className="pt-8 pb-6 text-xs text-white/50 text-center font-bold">
-                  © LaMax 2025 All Rights Reserved
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -328,71 +335,109 @@ export default function LandingContent({
 
       {/* Copyright Footer - Mobile: fixed at bottom, hidden if list needs scrolling */}
       {!listNeedsScrolling && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold md:hidden">
-          © LaMax 2025 All Rights Reserved
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60 text-center font-bold md:hidden">
+          BY JAMES TOPHAM · © All Rights Reserved
         </div>
       )}
 
-      {/* Desktop Layout (md and up) - Keep exactly as before */}
+      {/* Desktop Layout (md and up) */}
       <div className="hidden md:block p-16">
         <div
           className={
             embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
           }
         >
-          <Link href="/" className="block">
-            <h1 className="text-8xl font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer">
-              James Alexander Topham
-            </h1>
-          </Link>
-          <p className="text-2xl mb-10 font-bold tracking-wide">
-            <span
-              className={
-                embeddedVideo?.role === "cinematographer" ||
-                embeddedVideo?.role === "both"
-                  ? "text-white"
-                  : embeddedVideo
-                  ? "text-white/30 blur-[1px] transition-all"
-                  : "text-white/90"
-              }
-            >
-              Cinematographer
-            </span>{" "}
-            <span
-              className={
-                embeddedVideo
-                  ? "text-white/30 blur-[1px] transition-all"
-                  : "text-white/70"
-              }
-            >
-              &
-            </span>{" "}
-            <span
-              className={
-                embeddedVideo?.role === "director" ||
-                embeddedVideo?.role === "both"
-                  ? "text-white"
-                  : embeddedVideo
-                  ? "text-white/30 blur-[1px] transition-all"
-                  : "text-white/90"
-              }
-            >
-              Director
-            </span>
-          </p>
+          <div className="flex items-start justify-between gap-8">
+            <div>
+              <Link href="/" className="block">
+                <h1 className="text-base font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer">
+                  Alexander
+                </h1>
+              </Link>
+            </div>
+            <div className="flex-1 flex justify-center">
+              <div className="text-base font-bold tracking-[0.3em] uppercase">
+                <span
+                  className={
+                    embeddedVideo?.role === "cinematographer" ||
+                    embeddedVideo?.role === "both"
+                      ? "text-white"
+                      : embeddedVideo
+                      ? "text-white/30 blur-[1px] transition-all"
+                      : "text-white/80"
+                  }
+                >
+                  Cinematographer
+                </span>{" "}
+                <span
+                  className={
+                    embeddedVideo
+                      ? "text-white/30 blur-[1px] transition-all"
+                      : "text-white/60"
+                  }
+                >
+                  &
+                </span>{" "}
+                <span
+                  className={
+                    embeddedVideo?.role === "director" ||
+                    embeddedVideo?.role === "both"
+                      ? "text-white"
+                      : embeddedVideo
+                      ? "text-white/30 blur-[1px] transition-all"
+                      : "text-white/80"
+                  }
+                >
+                  Director
+                </span>
+              </div>
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowContact((prev) => !prev)}
+                className="text-base font-bold tracking-[0.3em] uppercase text-white/70 hover:text-white transition-colors"
+              >
+                Contact
+              </button>
+            </div>
+          </div>
         </div>
+
+        {showContact && (
+          <div className="mt-4 flex justify-end">
+            <div className="text-right text-sm text-white/70 space-y-1 font-bold">
+              <div>
+                <a
+                  href="mailto:alexbyjames@icloud.com"
+                  className="hover:text-white transition-colors"
+                >
+                  alexbyjames@icloud.com
+                </a>
+              </div>
+              <div>
+                <a
+                  href="https://instagram.com/alexbyjames"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white transition-colors"
+                >
+                  @alexbyjames
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
           {/* Section Navigation */}
-          <nav className="flex flex-wrap items-center gap-6 text-4xl font-bold">
+          <nav className="flex flex-wrap items-center justify-center gap-6">
             {featuredSections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => handleSectionClick(section.id)}
-                className={`min-h-[44px] min-w-[44px] px-3 py-2 transition-opacity hover:opacity-80 text-left ${
-                  activeSection === section.id
-                    ? "text-white underline decoration-white/80 underline-offset-4"
-                    : "text-white/90"
+                className={`min-h-[44px] px-1 py-1 text-4xl font-bold tracking-wide transition-all ${
+                  activeSection === section.id ? "text-white" : "text-white/50 hover:text-white"
                 }`}
                 aria-current={activeSection === section.id ? "page" : undefined}
                 aria-expanded={expandedSection === section.id}
@@ -402,7 +447,7 @@ export default function LandingContent({
             ))}
           </nav>
 
-          {/* Dropdown List - Desktop: absolute positioned */}
+          {/* Dropdown List - Desktop: centered under navigation */}
           <AnimatePresence mode="wait">
             {expandedSection && (
               <motion.ul
@@ -411,7 +456,7 @@ export default function LandingContent({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute left-16 top-[320px] text-4xl font-bold space-y-4"
+                className="mt-10 text-center text-4xl font-bold space-y-4"
               >
                 {sectionMap[expandedSection].projects.map((project, idx) => {
                   const { href, embed, role, title, slug } = project;
@@ -464,8 +509,8 @@ export default function LandingContent({
         </div>
 
         {/* Copyright Footer - Desktop */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/50 text-center font-bold">
-          © LaMax 2025 All Rights Reserved
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60 text-center font-bold">
+          BY JAMES TOPHAM · © All Rights Reserved
         </div>
       </div>
 
