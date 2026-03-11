@@ -30,8 +30,6 @@ const videoPaths: Record<SectionId, string> = {
 const artVideoPaths = [
   "/video/hero.mov",
   "/video/bramloop.mov",
-  "/video/gardenloop1.mov",
-  "/video/gardenloop2.mov",
   "/video/ireland%20boys%20regrade.mov",
 ];
 
@@ -49,6 +47,27 @@ function getVideoPath(section: SectionId): string {
   }
   if (section === "music") {
     return musicVideoPaths[Math.floor(Math.random() * musicVideoPaths.length)]!;
+  }
+  return videoPaths[section];
+}
+
+/** Pick a different video from the same section (so we don't replay the same one); for single-video sections returns same path */
+function getDifferentVideoPath(section: SectionId, currentSrcOrPath: string): string {
+  const currentPath = (() => {
+    try {
+      const u = new URL(currentSrcOrPath, "http://x");
+      return u.pathname;
+    } catch {
+      return currentSrcOrPath;
+    }
+  })();
+  if (section === "art") {
+    const others = artVideoPaths.filter((p) => p !== currentPath);
+    return others.length > 0 ? others[Math.floor(Math.random() * others.length)]! : artVideoPaths[0]!;
+  }
+  if (section === "music") {
+    const others = musicVideoPaths.filter((p) => p !== currentPath);
+    return others.length > 0 ? others[Math.floor(Math.random() * others.length)]! : musicVideoPaths[0]!;
   }
   return videoPaths[section];
 }
@@ -85,6 +104,8 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
   const video1Ref = useRef<HTMLVideoElement>(null);
   const video2Ref = useRef<HTMLVideoElement>(null);
   const [activeVideo, setActiveVideo] = useState<1 | 2>(1);
+  const sectionForVideo1Ref = useRef<SectionId>(activeSection);
+  const sectionForVideo2Ref = useRef<SectionId>(activeSection);
   const prefersLowData = usePrefersLowData();
 
   useEffect(() => {
@@ -146,7 +167,10 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
 
       if (nextVideoEl.current) {
         const video = nextVideoEl.current;
-        video.src = getVideoPath(activeSection);
+        const section = activeSection;
+        video.src = getVideoPath(section);
+        if (nextVideo === 1) sectionForVideo1Ref.current = section;
+        else sectionForVideo2Ref.current = section;
         video.preload = "metadata";
         video.load();
 
@@ -177,6 +201,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
 
     hasInitialLoad.current = true;
     video.src = getVideoPath(prevSection);
+    sectionForVideo1Ref.current = prevSection;
     video.preload = "metadata";
     video.load();
 
@@ -196,6 +221,40 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     };
   }, [isReducedMotion, shouldLoadVideo, prefersLowData, prevSection, isTabVisible]);
 
+  // When a video ends, load a different video from the same section instead of looping
+  useEffect(() => {
+    if (!shouldLoadVideo || isReducedMotion || prefersLowData) return;
+    const v1 = video1Ref.current;
+    const v2 = video2Ref.current;
+    if (!v1 || !v2) return;
+
+    const handleEnded = (video: HTMLVideoElement, sectionRef: React.MutableRefObject<SectionId>) => {
+      const section = sectionRef.current;
+      const currentPath = video.currentSrc || video.src;
+      const newPath = getDifferentVideoPath(section, currentPath);
+      video.src = newPath;
+      video.load();
+      const handleCanPlay = () => {
+        if (video.duration && video.duration > 0) {
+          const maxTime = Math.max(0, video.duration - 0.5);
+          video.currentTime = Math.random() * maxTime;
+        }
+        if (document.visibilityState === "visible") video.play().catch(() => {});
+      };
+      video.addEventListener("canplay", handleCanPlay, { once: true });
+      if (video.readyState >= 3) handleCanPlay();
+    };
+
+    const onEnded1 = () => handleEnded(v1, sectionForVideo1Ref);
+    const onEnded2 = () => handleEnded(v2, sectionForVideo2Ref);
+    v1.addEventListener("ended", onEnded1);
+    v2.addEventListener("ended", onEnded2);
+    return () => {
+      v1.removeEventListener("ended", onEnded1);
+      v2.removeEventListener("ended", onEnded2);
+    };
+  }, [shouldLoadVideo, isReducedMotion, prefersLowData]);
+
   if (isReducedMotion || prefersLowData) {
     return (
       <div className="fixed inset-0 w-full h-full object-cover -z-10 bg-black" aria-hidden="true" />
@@ -212,7 +271,6 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
         <video
           ref={video1Ref}
           autoPlay
-          loop
           muted
           playsInline
           preload="metadata"
@@ -229,7 +287,6 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
         <video
           ref={video2Ref}
           autoPlay
-          loop
           muted
           playsInline
           preload="metadata"
