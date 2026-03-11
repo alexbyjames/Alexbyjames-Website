@@ -29,7 +29,7 @@ export const featuredSections: SectionConfig[] = [
         slug: "autograph-gallery",
         href: "https://vimeo.com/580345427",
         embed: "vimeo",
-        role: "director",
+        role: "both",
       },
       {
         title: "The Last Room",
@@ -93,7 +93,13 @@ export const featuredSections: SectionConfig[] = [
     id: "commercial",
     label: "Commercial",
     projects: [
-      { title: "Microsoft Copilot", slug: "microsoft-copilot" },
+      {
+        title: "Microsoft Copilot",
+        slug: "microsoft-copilot",
+        href: "https://vimeo.com/1151209496/d5e373680b?share=copy",
+        embed: "vimeo",
+        role: "cinematographer",
+      },
       { title: "Anya Hindmarch", slug: "anya-hindmarch" },
       { title: "BeBody", slug: "bebody" },
     ],

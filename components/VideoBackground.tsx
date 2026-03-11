@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { type SectionId } from "@/lib/featuredSections";
 
 interface VideoBackgroundProps {
@@ -11,15 +11,42 @@ interface VideoBackgroundProps {
 const videoPaths: Record<SectionId, string> = {
   music: "/video/musicvideo_test.mp4",
   art: "/video/hero.mp4",
-  commercial: "/video/commercial_test.mp4",
+  commercial: "/video/microsoft_-_copilot%20(720p).mp4",
 };
+
+/** Detect slow connection or data-saver so we can avoid heavy video load */
+function usePrefersLowData(): boolean {
+  const [prefersLowData, setPrefersLowData] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined") return;
+
+    const conn = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
+    const saveData = conn?.saveData === true;
+    const slowType = conn?.effectiveType === "2g" || conn?.effectiveType === "slow-2g";
+
+    setPrefersLowData(Boolean(saveData || slowType));
+
+    if (!conn) return;
+    const onChange = () => {
+      setPrefersLowData(Boolean(conn.saveData || conn.effectiveType === "2g" || conn.effectiveType === "slow-2g"));
+    };
+    conn.addEventListener?.("change", onChange);
+    return () => conn.removeEventListener?.("change", onChange);
+  }, []);
+
+  return prefersLowData;
+}
 
 export default function VideoBackground({ activeSection }: VideoBackgroundProps) {
   const [isReducedMotion, setIsReducedMotion] = useState(false);
   const [prevSection, setPrevSection] = useState<SectionId>(activeSection);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const video1Ref = useRef<HTMLVideoElement>(null);
   const video2Ref = useRef<HTMLVideoElement>(null);
   const [activeVideo, setActiveVideo] = useState<1 | 2>(1);
+  const prefersLowData = usePrefersLowData();
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -29,102 +56,118 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
+  // Only start loading video after page is idle (or short delay) to save bandwidth on slow connections
+  useEffect(() => {
+    if (isReducedMotion || prefersLowData) return;
+
+    const useIdle = typeof window.requestIdleCallback === "function";
+    const id = useIdle
+      ? requestIdleCallback(() => setShouldLoadVideo(true), { timeout: 1500 })
+      : window.setTimeout(() => setShouldLoadVideo(true), 800);
+
+    return () => {
+      if (useIdle && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(id as number);
+      } else {
+        clearTimeout(id as ReturnType<typeof setTimeout>);
+      }
+    };
+  }, [isReducedMotion, prefersLowData]);
+
+  // Pause when tab is hidden to save bandwidth; resume when visible
+  useEffect(() => {
+    const handleVisibility = () => {
+      setIsTabVisible(document.visibilityState === "visible");
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  // Pause when tab is hidden to save bandwidth; resume when visible (control the active video only)
+  useEffect(() => {
+    if (!shouldLoadVideo) return;
+    const v1 = video1Ref.current;
+    const v2 = video2Ref.current;
+    if (isTabVisible) {
+      const active = activeVideo === 1 ? v1 : v2;
+      v1 && v1.pause();
+      v2 && v2.pause();
+      active?.play().catch(() => {});
+    } else {
+      v1?.pause();
+      v2?.pause();
+    }
+  }, [isTabVisible, shouldLoadVideo, activeVideo]);
+
   // Handle section change and crossfade
   useEffect(() => {
-    if (prevSection !== activeSection && !isReducedMotion) {
+    if (prevSection !== activeSection && !isReducedMotion && shouldLoadVideo && !prefersLowData) {
       const nextVideo = activeVideo === 1 ? 2 : 1;
       const nextVideoEl = nextVideo === 1 ? video1Ref : video2Ref;
 
-      // Set source for next video
       if (nextVideoEl.current) {
         const video = nextVideoEl.current;
         video.src = videoPaths[activeSection];
+        video.preload = "metadata";
         video.load();
-        
-        const handleLoadedData = () => {
-          // Random start time for crossfaded videos
+
+        const handleCanPlay = () => {
           if (video.duration && video.duration > 0) {
             const maxTime = Math.max(0, video.duration - 0.5);
-            const randomTime = Math.random() * maxTime;
-            video.currentTime = randomTime;
-            video.play().catch(() => {});
+            video.currentTime = Math.random() * maxTime;
           }
+          if (isTabVisible) video.play().catch(() => {});
         };
 
-        video.addEventListener("loadeddata", handleLoadedData, { once: true });
-        
-        // If already loaded, set random time immediately
-        if (video.readyState >= 2) {
-          handleLoadedData();
-        }
+        video.addEventListener("canplay", handleCanPlay, { once: true });
+        if (video.readyState >= 3) handleCanPlay();
 
-        // Fade out current, fade in next
         setActiveVideo(nextVideo);
         setPrevSection(activeSection);
       }
     } else if (prevSection !== activeSection) {
       setPrevSection(activeSection);
     }
-  }, [activeSection, prevSection, activeVideo, isReducedMotion]);
+  }, [activeSection, prevSection, activeVideo, isReducedMotion, shouldLoadVideo, prefersLowData, isTabVisible]);
 
-  // Initialize first video on mount with random start time
+  // Initialize first video only when we're ready and not in low-data mode (runs once)
+  const hasInitialLoad = useRef(false);
   useEffect(() => {
     const video = video1Ref.current;
-    if (!video || isReducedMotion) return;
+    if (!video || isReducedMotion || !shouldLoadVideo || prefersLowData || hasInitialLoad.current) return;
 
-    // Set initial source (Art section)
-    video.src = videoPaths["art"];
+    hasInitialLoad.current = true;
+    video.src = videoPaths[prevSection];
+    video.preload = "metadata";
     video.load();
 
-    const setRandomStartTime = () => {
+    const handleCanPlay = () => {
       if (video.duration && video.duration > 0) {
-        // Calculate random time, ensuring we don't go too close to the end
         const maxTime = Math.max(0, video.duration - 0.5);
-        const randomTime = Math.random() * maxTime;
-        video.currentTime = randomTime;
-        video.play().catch(() => {});
+        video.currentTime = Math.random() * maxTime;
       }
+      if (isTabVisible) video.play().catch(() => {});
     };
 
-    const handleLoadedMetadata = () => {
-      setRandomStartTime();
-    };
-
-    const handleLoadedData = () => {
-      // Also set random time when data is loaded
-      setRandomStartTime();
-    };
-
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    video.addEventListener("loadeddata", handleLoadedData);
-    
-    // Try to play if already loaded
-    if (video.readyState >= 2) {
-      setRandomStartTime();
-    }
+    video.addEventListener("canplay", handleCanPlay, { once: true });
+    if (video.readyState >= 3) handleCanPlay();
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("loadeddata", handleLoadedData);
+      video.removeEventListener("canplay", handleCanPlay);
     };
-  }, [isReducedMotion]);
+  }, [isReducedMotion, shouldLoadVideo, prefersLowData, prevSection, isTabVisible]);
 
-  if (isReducedMotion) {
+  if (isReducedMotion || prefersLowData) {
     return (
-      <div className="fixed inset-0 w-full h-full object-cover -z-10 bg-black">
-        {/* Static poster frame - you can add an image here */}
-      </div>
+      <div className="fixed inset-0 w-full h-full object-cover -z-10 bg-black" aria-hidden="true" />
     );
   }
 
   return (
     <div className="fixed inset-0 w-full h-[100svh] -z-10 overflow-hidden pointer-events-none">
-      {/* Video 1 */}
       <motion.div
         className="absolute inset-0 w-full h-full"
-        animate={{
-          opacity: activeVideo === 1 ? 1 : 0,
-        }}
+        animate={{ opacity: activeVideo === 1 ? 1 : 0 }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
       >
         <video
@@ -133,19 +176,15 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
           loop
           muted
           playsInline
-          preload="auto"
+          preload="metadata"
           className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src={videoPaths[prevSection]} type="video/mp4" />
-        </video>
+          aria-hidden="true"
+        />
       </motion.div>
 
-      {/* Video 2 */}
       <motion.div
         className="absolute inset-0 w-full h-full"
-        animate={{
-          opacity: activeVideo === 2 ? 1 : 0,
-        }}
+        animate={{ opacity: activeVideo === 2 ? 1 : 0 }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
       >
         <video
@@ -156,11 +195,9 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
           playsInline
           preload="metadata"
           className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src={videoPaths[activeSection]} type="video/mp4" />
-        </video>
+          aria-hidden="true"
+        />
       </motion.div>
     </div>
   );
 }
-

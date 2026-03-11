@@ -188,7 +188,7 @@ export default function LandingContent({
     <div className="relative z-20 text-white">
       {/* Mobile Layout (below md) */}
       <div className="block md:hidden px-4 pt-6 pb-8">
-        {/* Top Row: Name, Roles, Contact */}
+        {/* Top Row: Name (left), Roles (right) */}
         <div
           className={`flex items-start justify-between gap-4 ${
             embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
@@ -201,76 +201,71 @@ export default function LandingContent({
               </h1>
             </Link>
           </div>
-          <div className="flex flex-col items-center gap-0.5 text-[10px] font-semibold tracking-[0.2em] uppercase">
-            <div>
-              <span
-                className={
-                  embeddedVideo?.role === "cinematographer" ||
-                  embeddedVideo?.role === "both"
-                    ? "text-white"
-                    : embeddedVideo
-                    ? "text-white/30 blur-[1px] transition-all"
-                    : "text-white/80"
-                }
-              >
-                Cinematographer
-              </span>{" "}
-              <span
-                className={
-                  embeddedVideo
-                    ? "text-white/30 blur-[1px] transition-all"
-                    : "text-white/60"
-                }
-              >
-                &
-              </span>{" "}
-              <span
-                className={
-                  embeddedVideo?.role === "director" ||
-                  embeddedVideo?.role === "both"
-                    ? "text-white"
-                    : embeddedVideo
-                    ? "text-white/30 blur-[1px] transition-all"
-                    : "text-white/80"
-                }
-              >
-                Director
-              </span>
-            </div>
-          </div>
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowContact((prev) => !prev)}
-              className="text-xs font-bold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
+          <div className="text-right text-xs font-semibold tracking-[0.2em] uppercase">
+            <span
+              className={
+                embeddedVideo?.role === "cinematographer" ||
+                embeddedVideo?.role === "both"
+                  ? "text-white"
+                  : embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/80"
+              }
             >
-              Contact
-            </button>
+              Cinematographer
+            </span>{" "}
+            <span
+              className={
+                embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/60"
+              }
+            >
+              &
+            </span>{" "}
+            <span
+              className={
+                embeddedVideo?.role === "director" ||
+                embeddedVideo?.role === "both"
+                  ? "text-white"
+                  : embeddedVideo
+                  ? "text-white/30 blur-[1px] transition-all"
+                  : "text-white/80"
+              }
+            >
+              Director
+            </span>
           </div>
         </div>
 
-        {showContact && (
-          <div className="mt-4 text-xs text-white/70 space-y-1 font-bold">
-            <div>
+        {/* Contact - Mobile: fixed bottom right, toggled by button */}
+        <div className="fixed bottom-6 right-4 text-right text-xs z-30 md:hidden">
+          <button
+            type="button"
+            onClick={() => setShowContact((prev) => !prev)}
+            className="font-bold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
+          >
+            Contact
+          </button>
+          {showContact && (
+            <div className="mt-2 text-white/70 space-y-1 font-bold">
               <a
                 href="mailto:alexbyjames@icloud.com"
-                className="hover:text-white transition-colors"
+                className="block hover:text-white transition-colors"
               >
                 alexbyjames@icloud.com
               </a>
-            </div>
-            <div>
               <a
                 href="https://instagram.com/alexbyjames"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="block hover:text-white transition-colors"
               >
                 @alexbyjames
               </a>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Section List - Mobile: vertical menu */}
         <div className={`${embeddedVideo ? "blur-sm pointer-events-none" : ""} mt-10`}>
@@ -333,9 +328,9 @@ export default function LandingContent({
 
       </div>
 
-      {/* Copyright Footer - Mobile: fixed at bottom, hidden if list needs scrolling */}
+      {/* Copyright Footer - Mobile: fixed bottom left, hidden if list needs scrolling */}
       {!listNeedsScrolling && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60 text-center font-bold md:hidden">
+        <div className="fixed bottom-6 left-4 text-sm text-white/60 font-bold md:hidden">
           BY JAMES TOPHAM · © All Rights Reserved
         </div>
       )}
@@ -355,79 +350,72 @@ export default function LandingContent({
                 </h1>
               </Link>
             </div>
-            <div className="flex-1 flex justify-center">
-              <div className="text-base font-bold tracking-[0.3em] uppercase">
-                <span
-                  className={
-                    embeddedVideo?.role === "cinematographer" ||
-                    embeddedVideo?.role === "both"
-                      ? "text-white"
-                      : embeddedVideo
-                      ? "text-white/30 blur-[1px] transition-all"
-                      : "text-white/80"
-                  }
-                >
-                  Cinematographer
-                </span>{" "}
-                <span
-                  className={
-                    embeddedVideo
-                      ? "text-white/30 blur-[1px] transition-all"
-                      : "text-white/60"
-                  }
-                >
-                  &
-                </span>{" "}
-                <span
-                  className={
-                    embeddedVideo?.role === "director" ||
-                    embeddedVideo?.role === "both"
-                      ? "text-white"
-                      : embeddedVideo
-                      ? "text-white/30 blur-[1px] transition-all"
-                      : "text-white/80"
-                  }
-                >
-                  Director
-                </span>
-              </div>
-            </div>
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowContact((prev) => !prev)}
-                className="text-base font-bold tracking-[0.3em] uppercase text-white/70 hover:text-white transition-colors"
+            <div className="text-right text-base font-bold tracking-[0.3em] uppercase">
+              <span
+                className={
+                  embeddedVideo?.role === "cinematographer" ||
+                  embeddedVideo?.role === "both"
+                    ? "text-white"
+                    : embeddedVideo
+                    ? "text-white/30 blur-[1px] transition-all"
+                    : "text-white/80"
+                }
               >
-                Contact
-              </button>
+                Cinematographer
+              </span>{" "}
+              <span
+                className={
+                  embeddedVideo
+                    ? "text-white/30 blur-[1px] transition-all"
+                    : "text-white/60"
+                }
+              >
+                &
+              </span>{" "}
+              <span
+                className={
+                  embeddedVideo?.role === "director" ||
+                  embeddedVideo?.role === "both"
+                    ? "text-white"
+                    : embeddedVideo
+                    ? "text-white/30 blur-[1px] transition-all"
+                    : "text-white/80"
+                }
+              >
+                Director
+              </span>
             </div>
           </div>
         </div>
 
-        {showContact && (
-          <div className="mt-4 flex justify-end">
-            <div className="text-right text-sm text-white/70 space-y-1 font-bold">
-              <div>
-                <a
-                  href="mailto:alexbyjames@icloud.com"
-                  className="hover:text-white transition-colors"
-                >
-                  alexbyjames@icloud.com
-                </a>
-              </div>
-              <div>
-                <a
-                  href="https://instagram.com/alexbyjames"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
-                >
-                  @alexbyjames
-                </a>
-              </div>
+        {/* Contact - Desktop: fixed bottom right, toggled by button */}
+        <div className="fixed bottom-6 right-16 text-right text-sm">
+          <button
+            type="button"
+            onClick={() => setShowContact((prev) => !prev)}
+            className="font-bold tracking-[0.3em] uppercase text-white/70 hover:text-white transition-colors"
+          >
+            Contact
+          </button>
+          {showContact && (
+            <div className="mt-2 text-white/70 space-y-1 font-bold">
+              <a
+                href="mailto:alexbyjames@icloud.com"
+                className="block hover:text-white transition-colors"
+              >
+                alexbyjames@icloud.com
+              </a>
+              <a
+                href="https://instagram.com/alexbyjames"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block hover:text-white transition-colors"
+              >
+                @alexbyjames
+              </a>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
           {/* Section Navigation */}
@@ -508,8 +496,8 @@ export default function LandingContent({
           </AnimatePresence>
         </div>
 
-        {/* Copyright Footer - Desktop */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 text-sm text-white/60 text-center font-bold">
+        {/* Copyright Footer - Desktop: fixed bottom left */}
+        <div className="fixed bottom-6 left-16 text-sm text-white/60 font-bold">
           BY JAMES TOPHAM · © All Rights Reserved
         </div>
       </div>
