@@ -238,34 +238,41 @@ export default function LandingContent({
           </div>
         </div>
 
-        {/* Contact - Mobile: fixed bottom right, toggled by button */}
-        <div className="fixed bottom-6 right-4 text-right text-xs z-30 md:hidden">
-          <button
-            type="button"
-            onClick={() => setShowContact((prev) => !prev)}
-            className="font-bold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
-          >
-            Contact
-          </button>
-          {showContact && (
-            <div className="mt-2 text-white/70 space-y-1 font-bold">
-              <a
-                href="mailto:alexbyjames@icloud.com"
-                className="block hover:text-white transition-colors"
+        {/* Footer - Mobile: copyright left, contact right (one row to prevent overlap); hidden when list scrolls */}
+        {!listNeedsScrolling && (
+          <div className="fixed bottom-6 left-4 right-4 flex justify-between items-end gap-4 z-30 md:hidden">
+            <p className="text-xs text-white/60 font-bold min-w-0 max-w-[55%]">
+              BY JAMES TOPHAM · © All Rights Reserved
+            </p>
+            <div className="text-right text-xs shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowContact((prev) => !prev)}
+                className="font-bold tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
               >
-                alexbyjames@icloud.com
-              </a>
-              <a
-                href="https://instagram.com/alexbyjames"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block hover:text-white transition-colors"
-              >
-                @alexbyjames
-              </a>
+                Contact
+              </button>
+              {showContact && (
+                <div className="mt-2 text-white/70 space-y-1 font-bold">
+                  <a
+                    href="mailto:alexbyjames@icloud.com"
+                    className="block hover:text-white transition-colors"
+                  >
+                    alexbyjames@icloud.com
+                  </a>
+                  <a
+                    href="https://instagram.com/alexbyjames"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block hover:text-white transition-colors"
+                  >
+                    @alexbyjames
+                  </a>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Section List - Mobile: vertical menu */}
         <div className={`${embeddedVideo ? "blur-sm pointer-events-none" : ""} mt-10`}>
@@ -327,13 +334,6 @@ export default function LandingContent({
         </div>
 
       </div>
-
-      {/* Copyright Footer - Mobile: fixed bottom left, hidden if list needs scrolling */}
-      {!listNeedsScrolling && (
-        <div className="fixed bottom-6 left-4 text-sm text-white/60 font-bold md:hidden">
-          BY JAMES TOPHAM · © All Rights Reserved
-        </div>
-      )}
 
       {/* Desktop Layout (md and up) */}
       <div className="hidden md:block p-16">

@@ -21,10 +21,37 @@ interface NavigatorWithConnection extends Navigator {
 }
 
 const videoPaths: Record<SectionId, string> = {
-  music: "/video/musicvideo_test.mp4",
-  art: "/video/hero.mp4",
+  music: "/video/musicvideo_test.mov",
+  art: "/video/hero.mov",
   commercial: "/video/microsoft_-_copilot%20(720p).mp4",
 };
+
+/** Art section has multiple background options; pick one at random when loading */
+const artVideoPaths = [
+  "/video/hero.mov",
+  "/video/bramloop.mov",
+  "/video/gardenloop1.mov",
+  "/video/gardenloop2.mov",
+  "/video/ireland%20boys%20regrade.mov",
+];
+
+/** Music section has multiple background options; pick one at random when loading */
+const musicVideoPaths = [
+  "/video/musicvideo_test.mov",
+  "/video/musicvideo1.mp4",
+  "/video/musicvideo2.mp4",
+  "/video/musicvideo3.mp4",
+];
+
+function getVideoPath(section: SectionId): string {
+  if (section === "art") {
+    return artVideoPaths[Math.floor(Math.random() * artVideoPaths.length)]!;
+  }
+  if (section === "music") {
+    return musicVideoPaths[Math.floor(Math.random() * musicVideoPaths.length)]!;
+  }
+  return videoPaths[section];
+}
 
 /** Detect slow connection or data-saver so we can avoid heavy video load */
 function usePrefersLowData(): boolean {
@@ -119,7 +146,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
 
       if (nextVideoEl.current) {
         const video = nextVideoEl.current;
-        video.src = videoPaths[activeSection];
+        video.src = getVideoPath(activeSection);
         video.preload = "metadata";
         video.load();
 
@@ -149,7 +176,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     if (!video || isReducedMotion || !shouldLoadVideo || prefersLowData || hasInitialLoad.current) return;
 
     hasInitialLoad.current = true;
-    video.src = videoPaths[prevSection];
+    video.src = getVideoPath(prevSection);
     video.preload = "metadata";
     video.load();
 
