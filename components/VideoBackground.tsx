@@ -8,6 +8,18 @@ interface VideoBackgroundProps {
   activeSection: SectionId;
 }
 
+/** Network Information API shape (not in all browsers). Supports change listener for connection updates. */
+interface NetworkInformationLike {
+  effectiveType?: string;
+  saveData?: boolean;
+  addEventListener?(type: string, listener: () => void): void;
+  removeEventListener?(type: string, listener: () => void): void;
+}
+
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformationLike;
+}
+
 const videoPaths: Record<SectionId, string> = {
   music: "/video/musicvideo_test.mp4",
   art: "/video/hero.mp4",
@@ -21,7 +33,7 @@ function usePrefersLowData(): boolean {
   useEffect(() => {
     if (typeof navigator === "undefined") return;
 
-    const conn = (navigator as Navigator & { connection?: { effectiveType?: string; saveData?: boolean } }).connection;
+    const conn = (navigator as NavigatorWithConnection).connection;
     const saveData = conn?.saveData === true;
     const slowType = conn?.effectiveType === "2g" || conn?.effectiveType === "slow-2g";
 
@@ -69,7 +81,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
       if (useIdle && typeof window.cancelIdleCallback === "function") {
         window.cancelIdleCallback(id as number);
       } else {
-        clearTimeout(id as ReturnType<typeof setTimeout>);
+        clearTimeout(id as unknown as ReturnType<typeof setTimeout>);
       }
     };
   }, [isReducedMotion, prefersLowData]);
