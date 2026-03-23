@@ -51,7 +51,13 @@ export const featuredSections: SectionConfig[] = [
         embed: "youtube",
         role: "cinematographer",
       },
-      { title: "Master Peace – Stupid Kids", slug: "master-peace-stupid-kids" },
+      {
+        title: "Master Peace – Stupid Kids",
+        slug: "master-peace-stupid-kids",
+        href: "https://youtu.be/lx-5xHUv-l8?si=-Qn5xWkE6_puO3X-",
+        embed: "youtube",
+        role: "cinematographer",
+      },
       {
         title: "Master Peace - F**k It Up feat. Declan McKenna (Official Lyric Video)",
         slug: "master-peace-fuck-it-up",
