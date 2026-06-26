@@ -197,7 +197,7 @@ export default function LandingContent({
           <div>
             <Link href="/" className="block">
               <h1 className="text-xs font-black leading-tight hover:opacity-80 transition-opacity cursor-pointer">
-                Alexander
+                James Alexander Topham
               </h1>
             </Link>
           </div>
@@ -346,7 +346,7 @@ export default function LandingContent({
             <div>
               <Link href="/" className="block">
                 <h1 className="text-base font-black leading-tight mb-2 hover:opacity-80 transition-opacity cursor-pointer">
-                  Alexander
+                  James Alexander Topham
                 </h1>
               </Link>
             </div>

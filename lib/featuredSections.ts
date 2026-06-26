@@ -66,6 +66,13 @@ export const featuredSections: SectionConfig[] = [
         role: "both",
       },
       {
+        title: "James Emmanuel – Bridge Over The Tears I've Cried",
+        slug: "james-emmanuel-bridge-over-the-tears-ive-cried",
+        href: "https://youtu.be/wsF69w7HRI4?si=Qjub9Tmck2KrCFEI",
+        embed: "youtube",
+        role: "cinematographer",
+      },
+      {
         title: "Mandrake Handshake – Emonzaemon",
         slug: "mandrake-handshake-emonzaemon",
         href: "https://youtu.be/-XrM7h5rRcY?si=lA4LXr1eIZOB3SkZ",
@@ -107,7 +114,6 @@ export const featuredSections: SectionConfig[] = [
         role: "cinematographer",
       },
       { title: "Anya Hindmarch", slug: "anya-hindmarch" },
-      { title: "BeBody", slug: "bebody" },
     ],
   },
 ];

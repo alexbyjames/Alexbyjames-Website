@@ -29,7 +29,7 @@ const videoPaths: Record<SectionId, string> = {
 /** Art section has multiple background options; pick one at random when loading */
 const artVideoPaths = [
   "/video/hero.mov",
-  "/video/bramloop.mov",
+  "/video/Current%20Sound%20Mix.mov",
   "/video/ireland%20boys%20regrade.mov",
 ];
 
