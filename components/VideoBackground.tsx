@@ -34,40 +34,84 @@ const artVideoPaths = [
 ];
 
 /** Music section has multiple background options; pick one at random when loading */
+const BETTER_WEBSITE_BACKGROUND = "/video/Better%20Website%20Background.mp4";
+
 const musicVideoPaths = [
   "/video/musicvideo_test.mov",
   "/video/musicvideo1.mp4",
   "/video/musicvideo2.mp4",
   "/video/musicvideo3.mp4",
+  BETTER_WEBSITE_BACKGROUND,
 ];
+
+/** Higher weight = more likely to appear in the music rotation */
+const musicVideoWeights: Record<string, number> = {
+  [BETTER_WEBSITE_BACKGROUND]: 3,
+};
+
+function normalizeVideoPath(srcOrPath: string): string {
+  try {
+    return new URL(srcOrPath, "http://x").pathname;
+  } catch {
+    return srcOrPath;
+  }
+}
+
+/** Where to begin playback — keeps openings visible instead of random mid-clip jumps */
+const videoStartByPath: Record<string, { startMaxSec: number }> = {
+  "/video/musicvideo_test.mov": { startMaxSec: 25 },
+  "/video/musicvideo1.mp4": { startMaxSec: 10 },
+  [BETTER_WEBSITE_BACKGROUND]: { startMaxSec: 25 },
+};
+
+function getVideoStartTime(path: string, duration: number): number {
+  const cap = Math.max(0, duration - 0.5);
+  const config = videoStartByPath[normalizeVideoPath(path)];
+  if (config) {
+    return Math.random() * Math.min(config.startMaxSec, cap);
+  }
+  return Math.random() * cap;
+}
+
+function pickMusicVideoPath(excludePath?: string): string {
+  const exclude = excludePath ? normalizeVideoPath(excludePath) : undefined;
+  const weighted: string[] = [];
+  for (const path of musicVideoPaths) {
+    if (exclude && normalizeVideoPath(path) === exclude) continue;
+    const weight = musicVideoWeights[path] ?? 1;
+    for (let i = 0; i < weight; i++) weighted.push(path);
+  }
+  if (weighted.length === 0) {
+    return musicVideoPaths[0]!;
+  }
+  return weighted[Math.floor(Math.random() * weighted.length)]!;
+}
+
+function applyStartTime(video: HTMLVideoElement, srcPath: string) {
+  if (video.duration && video.duration > 0) {
+    video.currentTime = getVideoStartTime(srcPath, video.duration);
+  }
+}
 
 function getVideoPath(section: SectionId): string {
   if (section === "art") {
     return artVideoPaths[Math.floor(Math.random() * artVideoPaths.length)]!;
   }
   if (section === "music") {
-    return musicVideoPaths[Math.floor(Math.random() * musicVideoPaths.length)]!;
+    return pickMusicVideoPath();
   }
   return videoPaths[section];
 }
 
 /** Pick a different video from the same section (so we don't replay the same one); for single-video sections returns same path */
 function getDifferentVideoPath(section: SectionId, currentSrcOrPath: string): string {
-  const currentPath = (() => {
-    try {
-      const u = new URL(currentSrcOrPath, "http://x");
-      return u.pathname;
-    } catch {
-      return currentSrcOrPath;
-    }
-  })();
+  const currentPath = normalizeVideoPath(currentSrcOrPath);
   if (section === "art") {
     const others = artVideoPaths.filter((p) => p !== currentPath);
     return others.length > 0 ? others[Math.floor(Math.random() * others.length)]! : artVideoPaths[0]!;
   }
   if (section === "music") {
-    const others = musicVideoPaths.filter((p) => p !== currentPath);
-    return others.length > 0 ? others[Math.floor(Math.random() * others.length)]! : musicVideoPaths[0]!;
+    return pickMusicVideoPath(currentPath);
   }
   return videoPaths[section];
 }
@@ -168,17 +212,15 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
       if (nextVideoEl.current) {
         const video = nextVideoEl.current;
         const section = activeSection;
-        video.src = getVideoPath(section);
+        const srcPath = getVideoPath(section);
+        video.src = srcPath;
         if (nextVideo === 1) sectionForVideo1Ref.current = section;
         else sectionForVideo2Ref.current = section;
         video.preload = "metadata";
         video.load();
 
         const handleCanPlay = () => {
-          if (video.duration && video.duration > 0) {
-            const maxTime = Math.max(0, video.duration - 0.5);
-            video.currentTime = Math.random() * maxTime;
-          }
+          applyStartTime(video, srcPath);
           if (isTabVisible) video.play().catch(() => {});
         };
 
@@ -200,16 +242,14 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     if (!video || isReducedMotion || !shouldLoadVideo || prefersLowData || hasInitialLoad.current) return;
 
     hasInitialLoad.current = true;
-    video.src = getVideoPath(prevSection);
+    const srcPath = getVideoPath(prevSection);
+    video.src = srcPath;
     sectionForVideo1Ref.current = prevSection;
     video.preload = "metadata";
     video.load();
 
     const handleCanPlay = () => {
-      if (video.duration && video.duration > 0) {
-        const maxTime = Math.max(0, video.duration - 0.5);
-        video.currentTime = Math.random() * maxTime;
-      }
+      applyStartTime(video, srcPath);
       if (isTabVisible) video.play().catch(() => {});
     };
 
@@ -235,10 +275,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
       video.src = newPath;
       video.load();
       const handleCanPlay = () => {
-        if (video.duration && video.duration > 0) {
-          const maxTime = Math.max(0, video.duration - 0.5);
-          video.currentTime = Math.random() * maxTime;
-        }
+        applyStartTime(video, newPath);
         if (document.visibilityState === "visible") video.play().catch(() => {});
       };
       video.addEventListener("canplay", handleCanPlay, { once: true });

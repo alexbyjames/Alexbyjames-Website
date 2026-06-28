@@ -45,6 +45,13 @@ export const featuredSections: SectionConfig[] = [
     label: "Music Videos",
     projects: [
       {
+        title: "Feux – Better (Trailer)",
+        slug: "feux-better-trailer",
+        href: "https://youtu.be/LEnG_uDYSFY?si=ye9-MLOmksEKRRRg",
+        embed: "youtube",
+        role: "cinematographer",
+      },
+      {
         title: "Master Peace – Good Times",
         slug: "master-peace-good-times",
         href: "https://youtu.be/HJzJhS5qP24?si=Mfp3FYnJ9nCnLsuA",
