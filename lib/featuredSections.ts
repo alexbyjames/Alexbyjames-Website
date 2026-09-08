@@ -23,7 +23,7 @@ export const featuredSections: SectionConfig[] = [
     id: "art",
     label: "Art",
     projects: [
-      { title: "16mm Work", slug: "16mm-work" },
+      { title: "Still Life © (Coming Soon)", slug: "still-life-coming-soon" },
       {
         title: "Autograph Gallery",
         slug: "autograph-gallery",
@@ -71,6 +71,13 @@ export const featuredSections: SectionConfig[] = [
         href: "https://youtu.be/Wgmz1p1YPbc?si=ZHs2umdw2hsuEFRN",
         embed: "youtube",
         role: "both",
+      },
+      {
+        title: "Loveshy - Live From The Warehouse",
+        slug: "loveshy-live-from-the-warehouse",
+        href: "https://youtu.be/YZoetIRKLIg?si=mmo0kUdu8p22Itmi",
+        embed: "youtube",
+        role: "cinematographer",
       },
       {
         title: "James Emmanuel – Bridge Over The Tears I've Cried",

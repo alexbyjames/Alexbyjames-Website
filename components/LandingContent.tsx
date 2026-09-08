@@ -12,6 +12,18 @@ import {
 } from "@/lib/featuredSections";
 import { getEmbedSrc } from "@/lib/embed";
 
+function renderProjectTitle(title: string, slug?: string) {
+  if (slug === "still-life-coming-soon") {
+    return (
+      <>
+        Still Life{" "}
+        <span className="text-[0.55em] align-super leading-none">©</span> (Coming Soon)
+      </>
+    );
+  }
+  return title;
+}
+
 interface LandingContentProps {
   activeSection: SectionId;
   onSectionChange: (section: SectionId) => void;
@@ -36,6 +48,7 @@ export default function LandingContent({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
+  const desktopListContainerRef = useRef<HTMLUListElement>(null);
   const [listNeedsScrolling, setListNeedsScrolling] = useState(false);
   const [showContact, setShowContact] = useState(false);
 
@@ -119,13 +132,15 @@ export default function LandingContent({
     }
 
     const checkScrolling = () => {
-      const container = listContainerRef.current;
+      const container =
+        window.matchMedia("(min-width: 768px)").matches
+          ? desktopListContainerRef.current
+          : listContainerRef.current;
       if (!container) {
         setListNeedsScrolling(false);
         return;
       }
-      
-      // Check if content height exceeds container height
+
       const needsScrolling = container.scrollHeight > container.clientHeight;
       setListNeedsScrolling(needsScrolling);
     };
@@ -140,6 +155,13 @@ export default function LandingContent({
     const observer = new MutationObserver(checkScrolling);
     if (listContainerRef.current) {
       observer.observe(listContainerRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
+    }
+    if (desktopListContainerRef.current) {
+      observer.observe(desktopListContainerRef.current, {
         childList: true,
         subtree: true,
         attributes: true,
@@ -187,10 +209,10 @@ export default function LandingContent({
   return (
     <div className="relative z-20 text-white">
       {/* Mobile Layout (below md) */}
-      <div className="block md:hidden px-4 pt-6 pb-8">
+      <div className="block md:hidden flex flex-col h-[100svh] min-h-0 px-4 pt-6 pb-6">
         {/* Top Row: Name (left), Roles (right) */}
         <div
-          className={`flex items-start justify-between gap-4 ${
+          className={`flex shrink-0 items-start justify-between gap-4 ${
             embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
           }`}
         >
@@ -275,8 +297,8 @@ export default function LandingContent({
         )}
 
         {/* Section List - Mobile: vertical menu */}
-        <div className={`${embeddedVideo ? "blur-sm pointer-events-none" : ""} mt-10`}>
-          <nav className="flex flex-col items-center gap-1 mb-4">
+        <div className={`${embeddedVideo ? "blur-sm pointer-events-none" : ""} mt-10 flex flex-col flex-1 min-h-0`}>
+          <nav className="flex shrink-0 flex-col items-center gap-1 mb-4">
             {featuredSections.map((section) => (
               <button
                 key={section.id}
@@ -299,11 +321,7 @@ export default function LandingContent({
           {expandedSection && (
             <div
               ref={listContainerRef}
-              className={`overflow-y-auto overflow-x-hidden ${
-                listNeedsScrolling
-                  ? "max-h-[calc(100vh-444px)]"
-                  : "max-h-[calc(100vh-420px)]"
-              }`}
+              className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain [-webkit-overflow-scrolling:touch] pb-2"
             >
               <ul className="space-y-1 text-center">
                 {sectionMap[expandedSection].projects.map((project, idx) => {
@@ -322,7 +340,7 @@ export default function LandingContent({
                         rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
                         onClick={(e) => handleProjectClick(e, project, expandedSection)}
                       >
-                        {title}
+                        {renderProjectTitle(title, slug)}
                       </a>
                     </li>
                   );
@@ -336,11 +354,11 @@ export default function LandingContent({
       </div>
 
       {/* Desktop Layout (md and up) */}
-      <div className="hidden md:block p-16">
+      <div className="hidden md:flex md:flex-col h-[100svh] min-h-0 p-16">
         <div
-          className={
+          className={`shrink-0 ${
             embeddedVideo ? "relative z-[60] pointer-events-none select-none" : ""
-          }
+          }`}
         >
           <div className="flex items-start justify-between gap-8">
             <div>
@@ -417,9 +435,9 @@ export default function LandingContent({
           )}
         </div>
 
-        <div className={embeddedVideo ? "blur-sm pointer-events-none" : ""}>
+        <div className={`flex min-h-0 flex-1 flex-col ${embeddedVideo ? "blur-sm pointer-events-none" : ""}`}>
           {/* Section Navigation */}
-          <nav className="flex flex-wrap items-center justify-center gap-6">
+          <nav className="flex shrink-0 flex-wrap items-center justify-center gap-6">
             {featuredSections.map((section) => (
               <button
                 key={section.id}
@@ -440,11 +458,12 @@ export default function LandingContent({
             {expandedSection && (
               <motion.ul
                 key={expandedSection}
+                ref={desktopListContainerRef}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="mt-10 text-center text-4xl font-bold space-y-4"
+                className="mt-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain text-center text-4xl font-bold space-y-4 pb-24"
               >
                 {sectionMap[expandedSection].projects.map((project, idx) => {
                   const { href, embed, role, title, slug } = project;
@@ -486,7 +505,7 @@ export default function LandingContent({
                         rel={shouldOpenNewTab ? "noopener noreferrer" : undefined}
                         onClick={handleClick}
                       >
-                        {title}
+                        {renderProjectTitle(title, slug)}
                       </a>
                     </li>
                   );

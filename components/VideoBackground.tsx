@@ -20,6 +20,8 @@ interface NavigatorWithConnection extends Navigator {
   connection?: NetworkInformationLike;
 }
 
+const CROSSFADE_MS = 1200;
+
 const videoPaths: Record<SectionId, string> = {
   music: "/video/musicvideo_test.mov",
   art: "/video/hero.mov",
@@ -116,6 +118,52 @@ function getDifferentVideoPath(section: SectionId, currentSrcOrPath: string): st
   return videoPaths[section];
 }
 
+function releaseVideoMedia(video: HTMLVideoElement | null) {
+  if (!video || (!video.src && !video.currentSrc)) return;
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+}
+
+function assignVideoSource(video: HTMLVideoElement, srcPath: string): boolean {
+  const normalized = normalizeVideoPath(srcPath);
+  const current = normalizeVideoPath(video.currentSrc || video.src || "");
+  if (current === normalized) return false;
+  video.preload = "metadata";
+  video.src = srcPath;
+  return true;
+}
+
+type LoadSignal = { cancelled: boolean };
+
+function loadVideoWithStart(
+  video: HTMLVideoElement,
+  srcPath: string,
+  onReady: () => void,
+  signal?: LoadSignal,
+): () => void {
+  const needsLoad = assignVideoSource(video, srcPath);
+
+  const handleCanPlay = () => {
+    if (signal?.cancelled) return;
+    applyStartTime(video, srcPath);
+    onReady();
+  };
+
+  video.addEventListener("canplay", handleCanPlay, { once: true });
+
+  if (needsLoad) {
+    video.load();
+  } else if (video.readyState >= 3) {
+    handleCanPlay();
+  }
+
+  return () => {
+    if (signal) signal.cancelled = true;
+    video.removeEventListener("canplay", handleCanPlay);
+  };
+}
+
 /** Detect slow connection or data-saver so we can avoid heavy video load */
 function usePrefersLowData(): boolean {
   const [prefersLowData, setPrefersLowData] = useState(false);
@@ -142,15 +190,23 @@ function usePrefersLowData(): boolean {
 
 export default function VideoBackground({ activeSection }: VideoBackgroundProps) {
   const [isReducedMotion, setIsReducedMotion] = useState(false);
-  const [prevSection, setPrevSection] = useState<SectionId>(activeSection);
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const video1Ref = useRef<HTMLVideoElement>(null);
   const video2Ref = useRef<HTMLVideoElement>(null);
   const [activeVideo, setActiveVideo] = useState<1 | 2>(1);
+  const activeVideoRef = useRef<1 | 2>(1);
+  const prevSectionRef = useRef<SectionId>(activeSection);
   const sectionForVideo1Ref = useRef<SectionId>(activeSection);
   const sectionForVideo2Ref = useRef<SectionId>(activeSection);
+  const sectionLoadCleanupRef = useRef<(() => void) | null>(null);
+  const endedLoadCleanupRef = useRef<{ 1?: () => void; 2?: () => void }>({});
+  const releaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prefersLowData = usePrefersLowData();
+
+  useEffect(() => {
+    activeVideoRef.current = activeVideo;
+  }, [activeVideo]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -187,16 +243,20 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  // Pause when tab is hidden to save bandwidth; resume when visible (control the active video only)
+  // Pause when tab is hidden; resume only the active video when visible
   useEffect(() => {
     if (!shouldLoadVideo) return;
     const v1 = video1Ref.current;
     const v2 = video2Ref.current;
+    const inactive = activeVideoRef.current === 1 ? v2 : v1;
+    const active = activeVideoRef.current === 1 ? v1 : v2;
+
+    inactive?.pause();
+
     if (isTabVisible) {
-      const active = activeVideo === 1 ? v1 : v2;
-      v1 && v1.pause();
-      v2 && v2.pause();
-      active?.play().catch(() => {});
+      if (active && (active.src || active.currentSrc)) {
+        active.play().catch(() => {});
+      }
     } else {
       v1?.pause();
       v2?.pause();
@@ -205,35 +265,66 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
 
   // Handle section change and crossfade
   useEffect(() => {
-    if (prevSection !== activeSection && !isReducedMotion && shouldLoadVideo && !prefersLowData) {
-      const nextVideo = activeVideo === 1 ? 2 : 1;
-      const nextVideoEl = nextVideo === 1 ? video1Ref : video2Ref;
+    if (prevSectionRef.current === activeSection) return;
 
-      if (nextVideoEl.current) {
-        const video = nextVideoEl.current;
-        const section = activeSection;
-        const srcPath = getVideoPath(section);
-        video.src = srcPath;
-        if (nextVideo === 1) sectionForVideo1Ref.current = section;
-        else sectionForVideo2Ref.current = section;
-        video.preload = "metadata";
-        video.load();
-
-        const handleCanPlay = () => {
-          applyStartTime(video, srcPath);
-          if (isTabVisible) video.play().catch(() => {});
-        };
-
-        video.addEventListener("canplay", handleCanPlay, { once: true });
-        if (video.readyState >= 3) handleCanPlay();
-
-        setActiveVideo(nextVideo);
-        setPrevSection(activeSection);
-      }
-    } else if (prevSection !== activeSection) {
-      setPrevSection(activeSection);
+    if (isReducedMotion || !shouldLoadVideo || prefersLowData) {
+      prevSectionRef.current = activeSection;
+      return;
     }
-  }, [activeSection, prevSection, activeVideo, isReducedMotion, shouldLoadVideo, prefersLowData, isTabVisible]);
+
+    const previousActive = activeVideoRef.current;
+    const nextVideoNum: 1 | 2 = previousActive === 1 ? 2 : 1;
+    const nextVideoEl = nextVideoNum === 1 ? video1Ref.current : video2Ref.current;
+    const previousVideoEl = previousActive === 1 ? video1Ref.current : video2Ref.current;
+
+    if (!nextVideoEl) {
+      prevSectionRef.current = activeSection;
+      return;
+    }
+
+    sectionLoadCleanupRef.current?.();
+    sectionLoadCleanupRef.current = null;
+
+    if (releaseTimerRef.current) {
+      clearTimeout(releaseTimerRef.current);
+      releaseTimerRef.current = null;
+    }
+
+    const signal: LoadSignal = { cancelled: false };
+    const srcPath = getVideoPath(activeSection);
+
+    if (nextVideoNum === 1) {
+      sectionForVideo1Ref.current = activeSection;
+    } else {
+      sectionForVideo2Ref.current = activeSection;
+    }
+
+    sectionLoadCleanupRef.current = loadVideoWithStart(
+      nextVideoEl,
+      srcPath,
+      () => {
+        if (signal.cancelled) return;
+        if (isTabVisible) nextVideoEl.play().catch(() => {});
+      },
+      signal,
+    );
+
+    setActiveVideo(nextVideoNum);
+    prevSectionRef.current = activeSection;
+
+    releaseTimerRef.current = setTimeout(() => {
+      if (previousVideoEl && previousVideoEl !== nextVideoEl) {
+        releaseVideoMedia(previousVideoEl);
+      }
+      releaseTimerRef.current = null;
+    }, CROSSFADE_MS);
+
+    return () => {
+      signal.cancelled = true;
+      sectionLoadCleanupRef.current?.();
+      sectionLoadCleanupRef.current = null;
+    };
+  }, [activeSection, isReducedMotion, shouldLoadVideo, prefersLowData, isTabVisible]);
 
   // Initialize first video only when we're ready and not in low-data mode (runs once)
   const hasInitialLoad = useRef(false);
@@ -242,24 +333,25 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     if (!video || isReducedMotion || !shouldLoadVideo || prefersLowData || hasInitialLoad.current) return;
 
     hasInitialLoad.current = true;
-    const srcPath = getVideoPath(prevSection);
-    video.src = srcPath;
-    sectionForVideo1Ref.current = prevSection;
-    video.preload = "metadata";
-    video.load();
+    const srcPath = getVideoPath(activeSection);
+    sectionForVideo1Ref.current = activeSection;
+    prevSectionRef.current = activeSection;
 
-    const handleCanPlay = () => {
-      applyStartTime(video, srcPath);
-      if (isTabVisible) video.play().catch(() => {});
-    };
-
-    video.addEventListener("canplay", handleCanPlay, { once: true });
-    if (video.readyState >= 3) handleCanPlay();
+    const signal: LoadSignal = { cancelled: false };
+    const cleanup = loadVideoWithStart(
+      video,
+      srcPath,
+      () => {
+        if (signal.cancelled) return;
+        if (isTabVisible) video.play().catch(() => {});
+      },
+      signal,
+    );
 
     return () => {
-      video.removeEventListener("canplay", handleCanPlay);
+      cleanup();
     };
-  }, [isReducedMotion, shouldLoadVideo, prefersLowData, prevSection, isTabVisible]);
+  }, [activeSection, isReducedMotion, shouldLoadVideo, prefersLowData, isTabVisible]);
 
   // When a video ends, load a different video from the same section instead of looping
   useEffect(() => {
@@ -268,29 +360,57 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
     const v2 = video2Ref.current;
     if (!v1 || !v2) return;
 
-    const handleEnded = (video: HTMLVideoElement, sectionRef: React.MutableRefObject<SectionId>) => {
+    const handleEnded = (
+      videoNum: 1 | 2,
+      video: HTMLVideoElement,
+      sectionRef: React.MutableRefObject<SectionId>,
+    ) => {
+      if (activeVideoRef.current !== videoNum) return;
+
+      endedLoadCleanupRef.current[videoNum]?.();
+      endedLoadCleanupRef.current[videoNum] = undefined;
+
       const section = sectionRef.current;
       const currentPath = video.currentSrc || video.src;
       const newPath = getDifferentVideoPath(section, currentPath);
-      video.src = newPath;
-      video.load();
-      const handleCanPlay = () => {
-        applyStartTime(video, newPath);
-        if (document.visibilityState === "visible") video.play().catch(() => {});
-      };
-      video.addEventListener("canplay", handleCanPlay, { once: true });
-      if (video.readyState >= 3) handleCanPlay();
+
+      video.pause();
+
+      const signal: LoadSignal = { cancelled: false };
+      endedLoadCleanupRef.current[videoNum] = loadVideoWithStart(
+        video,
+        newPath,
+        () => {
+          if (signal.cancelled) return;
+          if (document.visibilityState === "visible") video.play().catch(() => {});
+        },
+        signal,
+      );
     };
 
-    const onEnded1 = () => handleEnded(v1, sectionForVideo1Ref);
-    const onEnded2 = () => handleEnded(v2, sectionForVideo2Ref);
+    const onEnded1 = () => handleEnded(1, v1, sectionForVideo1Ref);
+    const onEnded2 = () => handleEnded(2, v2, sectionForVideo2Ref);
     v1.addEventListener("ended", onEnded1);
     v2.addEventListener("ended", onEnded2);
     return () => {
       v1.removeEventListener("ended", onEnded1);
       v2.removeEventListener("ended", onEnded2);
+      endedLoadCleanupRef.current[1]?.();
+      endedLoadCleanupRef.current[2]?.();
+      endedLoadCleanupRef.current = {};
     };
   }, [shouldLoadVideo, isReducedMotion, prefersLowData]);
+
+  useEffect(() => {
+    return () => {
+      sectionLoadCleanupRef.current?.();
+      if (releaseTimerRef.current) {
+        clearTimeout(releaseTimerRef.current);
+      }
+      releaseVideoMedia(video1Ref.current);
+      releaseVideoMedia(video2Ref.current);
+    };
+  }, []);
 
   if (isReducedMotion || prefersLowData) {
     return (
@@ -310,7 +430,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
           autoPlay
           muted
           playsInline
-          preload="metadata"
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover"
           aria-hidden="true"
         />
@@ -326,7 +446,7 @@ export default function VideoBackground({ activeSection }: VideoBackgroundProps)
           autoPlay
           muted
           playsInline
-          preload="metadata"
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover"
           aria-hidden="true"
         />
