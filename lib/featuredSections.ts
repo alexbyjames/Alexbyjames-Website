@@ -127,7 +127,11 @@ export const featuredSections: SectionConfig[] = [
         embed: "vimeo",
         role: "cinematographer",
       },
-      { title: "Anya Hindmarch", slug: "anya-hindmarch" },
+      {
+        title: "Anya Hindmarch",
+        slug: "anya-hindmarch",
+        href: "/anyahindmarch",
+      },
     ],
   },
 ];

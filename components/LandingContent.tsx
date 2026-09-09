@@ -326,7 +326,8 @@ export default function LandingContent({
                   const linkHref = href ?? "#";
                   const allowEmbed = Boolean(embed) && Boolean(href);
                   const embedSrc = allowEmbed && href ? getEmbedSrc(href) : null;
-                  const shouldOpenNewTab = !!href && !embedSrc;
+                  const shouldOpenNewTab =
+                    !!href && !embedSrc && /^https?:\/\//.test(href);
 
                   return (
                     <li key={slug ?? idx}>
@@ -491,7 +492,8 @@ export default function LandingContent({
                   };
 
                   const linkHref = href ?? "#";
-                  const shouldOpenNewTab = !!href && !embedSrc;
+                  const shouldOpenNewTab =
+                    !!href && !embedSrc && /^https?:\/\//.test(href);
 
                   return (
                     <li key={slug ?? idx}>
