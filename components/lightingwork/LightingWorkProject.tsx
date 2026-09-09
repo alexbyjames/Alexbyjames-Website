@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import {
   lightingCreditLabels,
   type LightingProject,
@@ -6,13 +9,41 @@ import HorizontalStillGallery from "./HorizontalStillGallery";
 
 interface LightingWorkProjectProps {
   project: LightingProject;
+  projectIndex: number;
 }
 
-export default function LightingWorkProject({ project }: LightingWorkProjectProps) {
+const GALLERY_PLACEHOLDER_CLASS = "h-[42vw] max-h-[420px] md:h-[320px]";
+
+export default function LightingWorkProject({
+  project,
+  projectIndex,
+}: LightingWorkProjectProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [galleryVisible, setGalleryVisible] = useState(projectIndex === 0);
   const creditLabel = lightingCreditLabels[project.credit];
 
+  useEffect(() => {
+    if (galleryVisible) return;
+
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setGalleryVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "250px 0px", threshold: 0 },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [galleryVisible]);
+
   return (
-    <section className="space-y-4 md:space-y-5">
+    <section ref={sectionRef} className="space-y-4 md:space-y-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <h2 className="min-w-0 text-xl font-bold text-white md:text-2xl lg:text-3xl">
           {project.href ? (
@@ -33,10 +64,15 @@ export default function LightingWorkProject({ project }: LightingWorkProjectProp
         </span>
       </div>
 
-      <HorizontalStillGallery
-        stills={project.stills}
-        clipEdges={project.id === "scrooples"}
-      />
+      {galleryVisible ? (
+        <HorizontalStillGallery
+          stills={project.stills}
+          clipEdges={project.id === "scrooples"}
+          priorityFirstStill={projectIndex === 0}
+        />
+      ) : (
+        <div className={GALLERY_PLACEHOLDER_CLASS} aria-hidden="true" />
+      )}
     </section>
   );
 }

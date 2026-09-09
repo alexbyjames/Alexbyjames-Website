@@ -260,12 +260,9 @@ export default function LandingContent({
           </div>
         </div>
 
-        {/* Footer - Mobile: copyright left, contact right (one row to prevent overlap); hidden when list scrolls */}
+        {/* Footer - Mobile: contact right; hidden when list scrolls */}
         {!listNeedsScrolling && (
-          <div className="fixed bottom-6 left-4 right-4 flex justify-between items-end gap-4 z-30 md:hidden">
-            <p className="text-xs text-white/60 font-bold min-w-0 max-w-[55%]">
-              BY JAMES TOPHAM · © All Rights Reserved
-            </p>
+          <div className="fixed bottom-6 left-4 right-4 flex justify-end items-end z-30 md:hidden">
             <div className="text-right text-xs shrink-0">
               <button
                 type="button"

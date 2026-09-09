@@ -15,8 +15,12 @@ export default function LightingWorkPage() {
       </header>
 
       <main className="space-y-14 px-4 py-10 md:space-y-20 md:px-16 md:py-16">
-        {lightingProjects.map((project) => (
-          <LightingWorkProject key={project.id} project={project} />
+        {lightingProjects.map((project, projectIndex) => (
+          <LightingWorkProject
+            key={project.id}
+            project={project}
+            projectIndex={projectIndex}
+          />
         ))}
       </main>
 
