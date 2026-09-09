@@ -32,9 +32,7 @@ export default function VideoTile({
 
   return (
     <div
-      className={`relative aspect-[9/16] w-full cursor-pointer overflow-hidden bg-black ${
-        isPlaying ? "ring-1 ring-white" : ""
-      }`}
+      className="relative aspect-[9/16] w-full cursor-pointer overflow-hidden bg-black"
       onClick={() => {
         const el = videoRef.current;
         if (!el) return;
