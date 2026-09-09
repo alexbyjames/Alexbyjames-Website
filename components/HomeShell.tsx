@@ -3,6 +3,7 @@
 import { useState } from "react";
 import VideoBackground from "@/components/VideoBackground";
 import LandingContent from "@/components/LandingContent";
+import HomeLightingWorkLink from "@/components/home/HomeLightingWorkLink";
 import { type SectionId } from "@/lib/featuredSections";
 
 const DEFAULT_SECTION: SectionId = "art";
@@ -49,6 +50,7 @@ export default function HomeShell() {
             onProjectChange={handleProjectChange}
           />
         </div>
+        <HomeLightingWorkLink />
       </div>
     </>
   );
