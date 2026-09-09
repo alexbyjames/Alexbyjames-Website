@@ -72,7 +72,6 @@ export default function LazyStillImage({
         priority={priority}
         draggable={false}
         className={`${IMAGE_CLASS} ${clipEdges ? "origin-center scale-[1.06]" : ""}`}
-        style={{ width: "auto", height: "auto" }}
       />
     </div>
   );
